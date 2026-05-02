@@ -1,18 +1,17 @@
 import React from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Link, Tabs } from "expo-router";
-import { Pressable } from "react-native";
+import { Tabs } from "expo-router";
 
 import Colors from "@/constants/Colors";
 import { useColorScheme } from "@/components/useColorScheme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
+// 封裝圖示組件
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
 }
 
 export default function TabLayout() {
@@ -22,37 +21,32 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        headerShown: useClientOnlyValue(false, true),
+        // 如果你的 index 內頁已經有寫 Header (SafeAreaView)，這裡可以考慮 false 隱藏掉 Tabs 的預設 Header
+        headerShown: useClientOnlyValue(false, false), 
+        tabBarStyle: {
+          borderTopWidth: 0.5,
+          borderTopColor: '#DBDBDB',
+          backgroundColor: '#fff',
+        }
       }}
     >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Tab One",
-            tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-            headerRight: () => (
-              <Link href="/modal" asChild>
-                <Pressable>
-                  {({ pressed }) => (
-                    <FontAwesome
-                      name="info-circle"
-                      size={25}
-                      color={Colors[colorScheme ?? "light"].text}
-                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                    />
-                  )}
-                </Pressable>
-              </Link>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="two"
-          options={{
-            title: "Tab Two",
-            tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          }}
-        />
-      </Tabs>
+      {/* Tab One: 聊天室 */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "聊天室",
+          tabBarIcon: ({ color }) => <TabBarIcon name="comments" color={color} />,
+        }}
+      />
+
+      {/* Tab Two: 個人檔案 */}
+      <Tabs.Screen
+        name="two"
+        options={{
+          title: "個人檔案",
+          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }
