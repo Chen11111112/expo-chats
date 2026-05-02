@@ -11,6 +11,8 @@ import {
   SafeAreaView
 } from 'react-native';
 import { useUser } from '../context/UserContext';
+import { useRouter } from 'expo-router';
+import { useChat } from '../context/ChatContext';
 
 // --- 假資料區塊 ---
 
@@ -23,40 +25,48 @@ const mockOnlineUsers = [
   { id: '5', name: 'Sarina', avatar: 'https://i.pravatar.cc/150?img=7' },
 ];
 
-// 聊天室列表假資料
-const mockChats = [
-  { id: '1', name: 'Ana Thomas', avatar: 'https://i.pravatar.cc/150?img=5', lastMessage: 'Hey! how are you?', time: '3h' },
-  { id: '2', name: 'Bay Area Hikers', avatar: 'https://i.pravatar.cc/150?img=6', lastMessage: 'Linlin: I\'m here!', time: 'now' },
-  { id: '3', name: 'Book Club', avatar: 'https://i.pravatar.cc/150?img=7', lastMessage: 'Sarina: Has anyone read...', time: 'now' },
-  { id: '4', name: 'Jihoon Song', avatar: 'https://i.pravatar.cc/150?img=12', lastMessage: 'thank you!!!', time: '5h' },
-  { id: '5', name: 'Jacqueline Farley', avatar: 'https://i.pravatar.cc/150?img=9', lastMessage: 'Wanna meet on fri?', time: '6h' },
-  { id: '6', name: 'Carl, Agnes', avatar: 'https://i.pravatar.cc/150?img=10', lastMessage: 'Jamie: That\'s amazing', time: '2d' },
-];
-
 export default function ChatListScreen() {
-  const { userImage , userName} = useUser();
+  const { userImage, userName } = useUser();
+  const { chats, messages } = useChat(); // 2. 拿出聊天室列表和所有對話紀錄
+  const router = useRouter();
 
-  const handlePressChat = (chatName: string) => {
-    console.log(`點擊了聊天室: ${chatName}`);
-    // 這裡交給負責聊天室的人接手
+  // 接收整個 chat item，方便我們取得 id 和 name
+  // 接收整個 item 物件，這樣我們才能拿到 id 和 name
+  const handlePressChat = (chatItem: any) => {
+    console.log(`準備進入聊天室: ${chatItem.name}`);
+   
+    router.push({
+      pathname: "/chat/[id]", // 這裡要寫死你的檔名結構，不要用變數
+      params: { 
+        id: chatItem.id,     // 真正的 ID 從這裡傳給 [id].tsx
+        name: chatItem.name  // 對方的名字一樣照傳
+      }
+    });
   };
 
-  const renderChatItem = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={styles.chatItemContainer} 
-      onPress={() => handlePressChat(item.name)}
-      activeOpacity={0.7}
-    >
-      <Image source={{ uri: item.avatar }} style={styles.chatAvatar} />
-      
-      <View style={styles.chatTextContainer}>
-        <Text style={styles.chatName}>{item.name}</Text>
-        <Text style={styles.chatMessage} numberOfLines={1}>
-          {item.lastMessage} · {item.time}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderChatItem = ({ item }: { item: any }) => {
+    // 3. 找出這個聊天室的所有訊息
+    const roomMessages = messages[item.id] || [];
+    // 4. 抓出陣列的「最後一個」元素當作最後一則訊息
+    const lastMsg = roomMessages.length > 0 ? roomMessages[roomMessages.length - 1] : null;
+
+    return (
+      <TouchableOpacity 
+        style={styles.chatItemContainer} 
+        onPress={() => handlePressChat(item)}
+        activeOpacity={0.7}
+      >
+        <Image source={{ uri: item.avatar }} style={styles.chatAvatar} />
+        <View style={styles.chatTextContainer}>
+          <Text style={styles.chatName}>{item.name}</Text>
+          {/* 5. 顯示動態抓到的最後一則訊息與時間 */}
+          <Text style={styles.chatMessage} numberOfLines={1}>
+            {lastMsg ? lastMsg.text : '尚無訊息'} · {lastMsg ? lastMsg.time : ''}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -96,10 +106,10 @@ export default function ChatListScreen() {
 
           {/* 3. 聊天室列表 (已移除分類標籤、藍點與相機) */}
           <FlatList
-            data={mockChats}
+            data={chats} // 6. 這裡改成傳入 Context 拿出來的 chats
             keyExtractor={(item) => item.id}
             renderItem={renderChatItem}
-            scrollEnabled={false} // 外層已有 ScrollView
+            scrollEnabled={false}
             contentContainerStyle={styles.chatListContainer}
           />
         </ScrollView>
