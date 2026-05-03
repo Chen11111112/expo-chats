@@ -14,40 +14,54 @@ import { useUser } from '../context/UserContext';
 import { useRouter } from 'expo-router';
 import { useChat } from '../context/ChatContext';
 
-// --- 假資料區塊 ---
-
-// 線上用戶假資料
+// --- 假資料區塊：線上好友 ---
 const mockOnlineUsers = [
-  { id: '1', name: 'Jihoon', avatar: 'https://i.pravatar.cc/150?img=12' },
-  { id: '2', name: 'Ricky', avatar: 'https://i.pravatar.cc/150?img=13' },
-  { id: '3', name: 'Alex', avatar: 'https://i.pravatar.cc/150?img=14' },
-  { id: '4', name: 'Ana', avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: '5', name: 'Sarina', avatar: 'https://i.pravatar.cc/150?img=7' },
+  { id: '1', name: 'Ana Thomas', avatar: 'https://i.pravatar.cc/150?img=1' },
+  { id: '2', name: 'Jihoon Song', avatar: 'https://i.pravatar.cc/150?img=2' },
+  { id: '3', name: 'Book Club', avatar: 'https://i.pravatar.cc/150?img=3' },
+  { id: '4', name: 'Ana', avatar: 'https://i.pravatar.cc/150?img=4' },
+  { id: '5', name: 'Sarina', avatar: 'https://i.pravatar.cc/150?img=5' },
 ];
 
 export default function ChatListScreen() {
   const { userImage, userName } = useUser();
-  const { chats, messages } = useChat(); // 2. 拿出聊天室列表和所有對話紀錄
+  const { chats, messages } = useChat(); 
   const router = useRouter();
 
-  // 接收整個 chat item，方便我們取得 id 和 name
-  // 接收整個 item 物件，這樣我們才能拿到 id 和 name
+  /**
+   * 整合原本的 chats 與群組假資料
+   * 實務上建議將 isGroup 存入 ChatContext 的資料結構中
+   */
+  const displayChats = [
+    { 
+      id: 'group_99', 
+      name: '資三甲班群', 
+      avatar: 'https://i.pravatar.cc/150?img=32', 
+      isGroup: true 
+    },
+    ...chats,
+    { 
+      id: 'group_88', 
+      name: 'BIRC前端群', 
+      avatar: 'https://i.pravatar.cc/150?img=47', 
+      isGroup: true 
+    },
+  ];
+
   const handlePressChat = (chatItem: any) => {
-    console.log(`準備進入聊天室: ${chatItem.name}`);
-   
     router.push({
-      pathname: "/chat/[id]", // 這裡要寫死你的檔名結構，不要用變數
+      pathname: "/chat/[id]",
       params: { 
-        id: chatItem.id,     // 真正的 ID 從這裡傳給 [id].tsx
-        name: chatItem.name  // 對方的名字一樣照傳
+        id: chatItem.id,
+        name: chatItem.name,
+        // 將群組屬性傳入，方便聊天頁面判斷是否顯示成員列表或特定 UI
+        isGroup: chatItem.isGroup ? 'true' : 'false' 
       }
     });
   };
 
   const renderChatItem = ({ item }: { item: any }) => {
-    // 3. 找出這個聊天室的所有訊息
     const roomMessages = messages[item.id] || [];
-    // 4. 抓出陣列的「最後一個」元素當作最後一則訊息
     const lastMsg = roomMessages.length > 0 ? roomMessages[roomMessages.length - 1] : null;
 
     return (
@@ -56,12 +70,28 @@ export default function ChatListScreen() {
         onPress={() => handlePressChat(item)}
         activeOpacity={0.7}
       >
-        <Image source={{ uri: item.avatar }} style={styles.chatAvatar} />
+        <View>
+          <Image source={{ uri: item.avatar }} style={styles.chatAvatar} />
+          {item.isGroup && <View style={styles.groupIndicator} />}
+        </View>
+
         <View style={styles.chatTextContainer}>
-          <Text style={styles.chatName}>{item.name}</Text>
-          {/* 5. 顯示動態抓到的最後一則訊息與時間 */}
+          <View style={styles.chatHeaderRow}>
+            <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+            {item.isGroup && (
+              <View style={styles.groupBadge}>
+                <Text style={styles.groupBadgeText}>群組</Text>
+              </View>
+            )}
+          </View>
+          
           <Text style={styles.chatMessage} numberOfLines={1}>
-            {lastMsg ? lastMsg.text : '尚無訊息'} · {lastMsg ? lastMsg.time : ''}
+            
+            {lastMsg 
+              ? `${item.isGroup ? 'Alex: ' : ''}${lastMsg.text}` 
+              : '尚無訊息'
+            } 
+            {lastMsg ? ` · ${lastMsg.time}` : ''}
           </Text>
         </View>
       </TouchableOpacity>
@@ -75,25 +105,22 @@ export default function ChatListScreen() {
         {/* 1. 頂部 Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {/* 使用者的頭貼與帳號名稱 */}
             <Image 
               source={userImage ? { uri: userImage } : { uri: 'https://via.placeholder.com/150' }} 
               style={styles.headerCurrentUserAvatar} 
             />
             <Text style={styles.headerUsername}>{userName}</Text>
           </View>
-          {/* 已移除右側編輯筆 */}
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          {/* 2. 線上用戶區塊 (綠色小點) */}
+          {/* 2. 線上用戶區塊 */}
           <View style={styles.onlineSection}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.onlineScroll}>
               {mockOnlineUsers.map((user) => (
                 <TouchableOpacity key={user.id} style={styles.onlineItem}>
                   <View>
                     <Image source={{ uri: user.avatar }} style={styles.onlineAvatar} />
-                    {/* 綠色上線狀態點點 */}
                     <View style={styles.onlineDot} />
                   </View>
                   <Text style={styles.onlineName} numberOfLines={1}>
@@ -104,16 +131,15 @@ export default function ChatListScreen() {
             </ScrollView>
           </View>
 
-          {/* 3. 聊天室列表 (已移除分類標籤、藍點與相機) */}
+          {/* 3. 聊天室列表 (含個人與群組) */}
           <FlatList
-            data={chats} // 6. 這裡改成傳入 Context 拿出來的 chats
+            data={displayChats}
             keyExtractor={(item) => item.id}
             renderItem={renderChatItem}
             scrollEnabled={false}
             contentContainerStyle={styles.chatListContainer}
           />
         </ScrollView>
-
       </View>
     </SafeAreaView>
   );
@@ -128,7 +154,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  // Header 樣式
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,11 +178,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
   },
-  // 線上用戶樣式
   onlineSection: {
     paddingVertical: 15,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#dbdbdb', // 增加一條淡淡的底線區隔
+    borderBottomColor: '#dbdbdb',
   },
   onlineScroll: {
     paddingHorizontal: 15,
@@ -176,9 +200,9 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#4CAF50', // 綠色
+    backgroundColor: '#4CAF50',
     borderWidth: 2,
-    borderColor: '#fff', // 讓綠點有白色邊框，看起來更立體
+    borderColor: '#fff',
     position: 'absolute',
     bottom: 0,
     right: 0,
@@ -189,7 +213,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  // 聊天列表樣式
   chatListContainer: {
     paddingTop: 10,
   },
@@ -209,13 +232,43 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     justifyContent: 'center',
   },
-  chatName: {
-    fontSize: 15,
-    color: '#000',
+  chatHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    maxWidth: '70%',
   },
   chatMessage: {
     fontSize: 14,
-    color: '#504e4e',
+    color: '#666',
+  },
+  // --- 群組專屬樣式 ---
+  groupIndicator: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#007AFF',
+    borderWidth: 2,
+    borderColor: '#fff',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+  },
+  groupBadge: {
+    backgroundColor: '#F0F2f5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  groupBadgeText: {
+    fontSize: 10,
+    color: '#888',
+    fontWeight: 'bold',
   },
 });
