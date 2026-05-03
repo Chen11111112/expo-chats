@@ -21,7 +21,7 @@ export default function IGProfileScreen() {
     setUserName: setUsername, 
   } = useUser();
 
-  const [name, setName] = useState("影子");
+  const [name, setName] = useState("陳家豪");
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
